@@ -1,0 +1,11 @@
+node_modules/
+dist/
+
+# The native Android project is generated from capacitor.config.json by
+# `npx cap add android` (run locally or in CI), so it is not tracked here.
+android/
+
+# Build outputs
+*.apk
+*.aab
+*.keystore

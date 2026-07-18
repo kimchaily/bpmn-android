@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>BPMN Mobile</title>
+  </head>
+  <body>
+    <div id="app">
+      <header id="toolbar">
+        <div class="toolbar-group toolbar-start">
+          <button id="btn-new" class="tool" aria-label="New diagram" title="New">
+            <span class="tool-icon">＋</span>
+          </button>
+          <button id="btn-open" class="tool" aria-label="Open .bpmn file" title="Open">
+            <span class="tool-icon">📂</span>
+          </button>
+          <button id="btn-save" class="tool" aria-label="Save / share .bpmn" title="Save">
+            <span class="tool-icon">💾</span>
+          </button>
+        </div>
+
+        <div class="toolbar-group toolbar-center">
+          <button id="btn-undo" class="tool" aria-label="Undo" title="Undo">
+            <span class="tool-icon">↶</span>
+          </button>
+          <button id="btn-redo" class="tool" aria-label="Redo" title="Redo">
+            <span class="tool-icon">↷</span>
+          </button>
+          <button id="btn-fit" class="tool" aria-label="Fit to screen" title="Fit">
+            <span class="tool-icon">⤢</span>
+          </button>
+        </div>
+
+        <div class="toolbar-group toolbar-end">
+          <button id="btn-properties" class="tool" aria-label="Toggle properties panel" title="Properties">
+            <span class="tool-icon">⚙︎</span>
+          </button>
+          <button id="btn-export" class="tool" aria-label="Export as SVG" title="Export SVG">
+            <span class="tool-icon">🖼</span>
+          </button>
+        </div>
+      </header>
+
+      <main id="workspace">
+        <div id="canvas"></div>
+        <aside id="properties" class="hidden"></aside>
+        <div id="zoom-controls">
+          <button id="btn-zoom-in" class="zoom-btn" aria-label="Zoom in" title="Zoom in">＋</button>
+          <button id="btn-zoom-out" class="zoom-btn" aria-label="Zoom out" title="Zoom out">−</button>
+        </div>
+      </main>
+
+      <div id="toast" class="hidden" role="status" aria-live="polite"></div>
+    </div>
+
+    <!-- Hidden fallback file input used when running in a plain browser (dev). -->
+    <input id="file-input" type="file" accept=".bpmn,.xml,application/xml,text/xml" hidden />
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
