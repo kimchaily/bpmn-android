@@ -16,8 +16,13 @@ import moveCanvasModule from "diagram-js/lib/navigation/movecanvas";
 // Build a bpmn-js Modeler wired with the same feature modules the Obsidian
 // plugin enables by default, plus touch navigation for mobile. Keeping this in
 // one place mirrors the plugin's src/bpmnModeler.ts configuration.
-export function createModeler({ canvas, propertiesPanel }) {
-  return new BpmnModeler({
+//
+// When `dark` is set, the renderer's *default* fill/stroke/label colors are
+// switched to a light-on-dark palette so an uncoloured diagram is legible on a
+// dark canvas. Elements the user has explicitly coloured (via the color picker)
+// keep their own colors — the defaults are only a fallback.
+export function createModeler({ canvas, propertiesPanel, dark }) {
+  const config = {
     container: canvas,
     propertiesPanel: {
       parent: propertiesPanel,
@@ -32,5 +37,15 @@ export function createModeler({ canvas, propertiesPanel }) {
       gridModule,
       moveCanvasModule,
     ],
-  });
+  };
+
+  if (dark) {
+    config.bpmnRenderer = {
+      defaultFillColor: "#26282c",
+      defaultStrokeColor: "#e6e6e6",
+      defaultLabelColor: "#e6e6e6",
+    };
+  }
+
+  return new BpmnModeler(config);
 }

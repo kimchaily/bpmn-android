@@ -19,7 +19,7 @@
 // In both modes a touch that never crosses the movement threshold is left
 // untouched, so it registers as a tap. Two-finger gestures are ignored here and
 // handled by the pinch-zoom logic instead.
-export function enableTouchDragging(el, { canvas, isPanMode }) {
+export function enableTouchDragging(el, { getCanvas, isPanMode }) {
   const THRESHOLD = 6; // px of movement before a touch counts as a drag
   let active = false; // a single-finger touch is in progress
   let dragging = false; // movement threshold crossed; we are panning/dragging
@@ -99,7 +99,7 @@ export function enableTouchDragging(el, { canvas, isPanMode }) {
       e.preventDefault();
       if (panning) {
         // Move the viewport so the diagram follows the finger.
-        canvas.scroll({ dx: t.clientX - lastX, dy: t.clientY - lastY });
+        getCanvas().scroll({ dx: t.clientX - lastX, dy: t.clientY - lastY });
       } else {
         targetAt(t.clientX, t.clientY).dispatchEvent(
           mouseEvent("mousemove", t.clientX, t.clientY, true)

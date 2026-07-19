@@ -27,10 +27,11 @@ const toastEl = document.getElementById("toast");
 
 let currentName = localStorage.getItem(NAME_KEY) || "diagram.bpmn";
 
-const modeler = createModeler({
-  canvas: canvasEl,
-  propertiesPanel: propertiesEl,
-});
+// The modeler is (re)created whenever the effective theme flips, so the dark /
+// light default colors bake in correctly. Everything else references it through
+// the `modeler` binding or `getCanvas()`, so it keeps working across rebuilds.
+let modeler;
+const getCanvas = () => modeler.get("canvas");
 
 let toastTimer = null;
 function toast(message) {
@@ -40,10 +41,67 @@ function toast(message) {
   toastTimer = setTimeout(() => toastEl.classList.add("hidden"), 2400);
 }
 
+// Persist the working diagram to localStorage after every change so the app
+// restores it on next launch.
+let persistTimer = null;
+async function persist() {
+  try {
+    const { xml } = await modeler.saveXML({ format: true });
+    localStorage.setItem(STORAGE_KEY, xml);
+  } catch (err) {
+    // Ignore transient serialization errors during rapid edits.
+  }
+}
+
+// (Re)build the modeler for the given darkness, optionally importing existing
+// XML and restoring a viewbox so a theme switch is seamless.
+async function buildModeler(dark, { xml, viewbox } = {}) {
+  if (modeler) {
+    try {
+      modeler.destroy();
+    } catch (err) {
+      /* ignore */
+    }
+    propertiesEl.replaceChildren();
+  }
+
+  modeler = createModeler({
+    canvas: canvasEl,
+    propertiesPanel: propertiesEl,
+    dark,
+  });
+
+  modeler.on("commandStack.changed", () => {
+    if (persistTimer) clearTimeout(persistTimer);
+    persistTimer = setTimeout(persist, 400);
+  });
+
+  if (xml !== undefined) {
+    try {
+      await modeler.importXML(xml);
+      const canvas = modeler.get("canvas");
+      if (viewbox) {
+        canvas.viewbox({
+          x: viewbox.x,
+          y: viewbox.y,
+          width: viewbox.width,
+          height: viewbox.height,
+        });
+      } else {
+        canvas.zoom("fit-viewport");
+      }
+    } catch (err) {
+      console.error("Failed to import BPMN", err);
+      toast("Could not open diagram — invalid BPMN");
+    }
+  }
+}
+
+// Load a new diagram into the current modeler (open / new).
 async function loadDiagram(xml, name) {
   try {
     await modeler.importXML(xml);
-    modeler.get("canvas").zoom("fit-viewport");
+    getCanvas().zoom("fit-viewport");
     if (name) {
       currentName = name;
       localStorage.setItem(NAME_KEY, name);
@@ -54,15 +112,17 @@ async function loadDiagram(xml, name) {
   }
 }
 
-// Persist the working diagram to localStorage after every change so the app
-// restores it on next launch.
-async function persist() {
+// Rebuild the modeler for a new theme, preserving the current diagram + view.
+async function rebuildForTheme(dark) {
+  let xml;
+  let viewbox;
   try {
-    const { xml } = await modeler.saveXML({ format: true });
-    localStorage.setItem(STORAGE_KEY, xml);
+    xml = (await modeler.saveXML({ format: true })).xml;
+    viewbox = getCanvas().viewbox();
   } catch (err) {
-    // Ignore transient serialization errors during rapid edits.
+    xml = localStorage.getItem(STORAGE_KEY) || EMPTY_DIAGRAM;
   }
+  await buildModeler(dark, { xml, viewbox });
 }
 
 // --- Toolbar wiring -------------------------------------------------------
@@ -101,18 +161,18 @@ on("btn-save", async () => {
 
 on("btn-undo", () => modeler.get("commandStack").undo());
 on("btn-redo", () => modeler.get("commandStack").redo());
-on("btn-fit", () => modeler.get("canvas").zoom("fit-viewport"));
+on("btn-fit", () => getCanvas().zoom("fit-viewport"));
 
 const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 4;
 const clampZoom = (z) => Math.min(Math.max(z, MIN_ZOOM), MAX_ZOOM);
 
 on("btn-zoom-in", () => {
-  const canvas = modeler.get("canvas");
+  const canvas = getCanvas();
   canvas.zoom(clampZoom(canvas.zoom() * 1.2));
 });
 on("btn-zoom-out", () => {
-  const canvas = modeler.get("canvas");
+  const canvas = getCanvas();
   canvas.zoom(clampZoom(canvas.zoom() / 1.2));
 });
 
@@ -121,21 +181,17 @@ on("btn-zoom-out", () => {
 // pinch midpoint fixed on screen (center is in container-pixel coordinates,
 // matching Canvas#zoom).
 function setupPinchZoom(el) {
-  const canvas = modeler.get("canvas");
   let startDist = 0;
   let startScale = 1;
   const distance = (t) =>
-    Math.hypot(
-      t[0].clientX - t[1].clientX,
-      t[0].clientY - t[1].clientY
-    );
+    Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
 
   el.addEventListener(
     "touchstart",
     (e) => {
       if (e.touches.length === 2) {
         startDist = distance(e.touches);
-        startScale = canvas.zoom();
+        startScale = getCanvas().zoom();
       }
     },
     { passive: false }
@@ -151,7 +207,7 @@ function setupPinchZoom(el) {
         const midY =
           (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
         const next = clampZoom(startScale * (distance(e.touches) / startDist));
-        canvas.zoom(next, { x: midX, y: midY });
+        getCanvas().zoom(next, { x: midX, y: midY });
       }
     },
     { passive: false }
@@ -163,8 +219,6 @@ function setupPinchZoom(el) {
   el.addEventListener("touchcancel", endPinch);
 }
 
-setupPinchZoom(canvasEl);
-
 // Pan vs. edit mode. Pan mode (default) makes one-finger drags scroll the
 // canvas so elements are never moved by accident; edit mode lets drags move
 // elements. Persisted across launches.
@@ -174,7 +228,9 @@ function refreshMode() {
   modeBtn.classList.toggle("active", panMode);
   const icon = modeBtn.querySelector(".tool-icon");
   if (icon) icon.textContent = panMode ? "🖐" : "✥";
-  modeBtn.title = panMode ? "Pan mode (drag pans; tap selects)" : "Edit mode (drag moves elements)";
+  modeBtn.title = panMode
+    ? "Pan mode (drag pans; tap selects)"
+    : "Edit mode (drag moves elements)";
   modeBtn.setAttribute("aria-label", modeBtn.title);
 }
 refreshMode();
@@ -184,16 +240,6 @@ on("btn-mode", () => {
   refreshMode();
   toast(panMode ? "Pan mode" : "Edit mode");
 });
-
-// Translate single-finger touch drags into either a canvas pan (pan mode) or
-// the mouse events diagram-js needs to move elements (edit mode); see touch.js.
-enableTouchDragging(canvasEl, {
-  canvas: modeler.get("canvas"),
-  isPanMode: () => panMode,
-});
-
-// Theme toggle (system / light / dark).
-initTheme(document.getElementById("btn-theme"));
 
 on("btn-properties", () => {
   const shown = propertiesEl.classList.toggle("open");
@@ -213,14 +259,21 @@ on("btn-export", async () => {
   }
 });
 
-// Autosave on every model change (debounced).
-let persistTimer = null;
-modeler.on("commandStack.changed", () => {
-  if (persistTimer) clearTimeout(persistTimer);
-  persistTimer = setTimeout(persist, 400);
-});
-
 // --- Boot -----------------------------------------------------------------
 
+// Theme first, so the initial modeler is built with the right colors; a later
+// flip rebuilds it preserving the diagram.
+const theme = initTheme(document.getElementById("btn-theme"), (dark) =>
+  rebuildForTheme(dark)
+);
+
 const saved = localStorage.getItem(STORAGE_KEY);
-loadDiagram(saved || EMPTY_DIAGRAM, currentName);
+buildModeler(theme.isDark(), { xml: saved || EMPTY_DIAGRAM });
+
+// These attach DOM listeners once and resolve the live canvas via getCanvas(),
+// so they survive modeler rebuilds.
+setupPinchZoom(canvasEl);
+enableTouchDragging(canvasEl, {
+  getCanvas,
+  isPanMode: () => panMode,
+});

@@ -9,6 +9,21 @@
     <meta name="color-scheme" content="light dark" />
     <link rel="icon" href="data:," />
     <title>BPMN Mobile</title>
+    <script>
+      // Apply the resolved theme class before first paint to avoid a flash.
+      (function () {
+        try {
+          var t = localStorage.getItem("bpmn-mobile:theme") || "system";
+          var dark =
+            t === "dark" ||
+            (t === "system" &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          document.documentElement.classList.add(
+            dark ? "theme-dark" : "theme-light"
+          );
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="app">

@@ -17,7 +17,9 @@ create/append-anything, token simulation, minimap, and grid.
 - **Pan / Edit modes** (🖐 toggle): in pan mode a one-finger drag always moves
   the view, so you never nudge an element by accident while navigating; switch
   to edit mode to drag elements around. Tapping selects in either mode.
-- **Light / dark / system theme** (🖥 toggle), remembered between launches.
+- **Light / dark / system theme** (🖥 toggle), remembered between launches —
+  including a genuinely dark diagram canvas (default element colors switch to a
+  light-on-dark palette; any custom element colors are preserved).
 - **Properties panel** to edit element properties (⚙︎ toggle).
 - **Open** `.bpmn`/`.xml` files via the native document picker.
 - **Save / share** the diagram back out (`.bpmn`) via the Android share sheet.

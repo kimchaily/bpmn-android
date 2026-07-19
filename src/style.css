@@ -8,31 +8,25 @@
   --accent-fg: #ffffff;
   --toast-bg: rgba(28, 30, 34, 0.92);
   --toast-fg: #ffffff;
-  /* The diagram surface stays a light "paper" in every theme so BPMN shapes,
-     labels, and flows keep full contrast and user-picked colors stay true. */
   --canvas-bg: #ffffff;
+  --grid-dot: rgba(0, 0, 0, 0.16);
+  --minimap-bg: #ffffff;
 }
 
-/* Dark values, shared by the OS preference ("system" theme, i.e. no explicit
-   data-theme) and by the forced "dark" theme. */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) {
-    --bg: #1e1f22;
-    --fg: #e6e6e6;
-    --toolbar-bg: #26282c;
-    --border: #3a3d42;
-    --toast-bg: rgba(240, 240, 240, 0.95);
-    --toast-fg: #1c1e21;
-  }
-}
-
-:root[data-theme="dark"] {
+/* Effective darkness is resolved in JS (theme.js) and reflected as a
+   `theme-dark` class on <html> — covering both the forced "dark" theme and the
+   OS preference under "system". The diagram canvas darkens too; the bpmn-js
+   element colors are switched separately by rebuilding the modeler. */
+:root.theme-dark {
   --bg: #1e1f22;
   --fg: #e6e6e6;
   --toolbar-bg: #26282c;
   --border: #3a3d42;
   --toast-bg: rgba(240, 240, 240, 0.95);
   --toast-fg: #1c1e21;
+  --canvas-bg: #17181b;
+  --grid-dot: rgba(255, 255, 255, 0.12);
+  --minimap-bg: #1e1f22;
 }
 
 * {
@@ -133,6 +127,76 @@ body {
   min-width: 0;
   height: 100%;
   background: var(--canvas-bg);
+}
+
+/* Grid dots (diagram-js-grid paints a <circle fill="#ccc"> in a <pattern>);
+   a CSS `fill` overrides that attribute so the grid adapts to the theme. */
+#canvas svg defs pattern[id^="djs-grid-pattern"] circle {
+  fill: var(--grid-dot);
+}
+
+/* Minimap panel follows the theme so it isn't a white block on a dark canvas. */
+:root.theme-dark .djs-minimap {
+  background: var(--minimap-bg);
+  border-color: var(--border);
+}
+:root.theme-dark .djs-minimap:not(.open) {
+  background-color: var(--minimap-bg);
+}
+:root.theme-dark .djs-minimap .djs-minimap-toggle,
+:root.theme-dark .djs-minimap:not(.open) .toggle,
+:root.theme-dark .djs-minimap .toggle {
+  color: var(--fg);
+}
+
+/* Token-simulation "Token Simulation" toggle chip. */
+:root.theme-dark .bts-toggle-mode {
+  background: var(--toolbar-bg);
+  color: var(--fg);
+  box-shadow: 0 0 2px var(--border);
+}
+
+/* Palette, context pad and popup menus: dark surfaces with light icons so the
+   on-canvas controls match a dark diagram. */
+:root.theme-dark .djs-palette {
+  background: var(--toolbar-bg);
+  border-color: var(--border);
+}
+:root.theme-dark .djs-palette .entry {
+  color: var(--fg);
+}
+:root.theme-dark .djs-palette .separator {
+  border-top-color: var(--border);
+}
+:root.theme-dark .djs-palette .entry:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+:root.theme-dark .djs-context-pad .entry {
+  background: var(--toolbar-bg);
+  color: var(--fg);
+  box-shadow: 0 0 2px var(--border);
+}
+:root.theme-dark .djs-context-pad .entry:hover {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+:root.theme-dark .djs-popup {
+  background: var(--toolbar-bg);
+  color: var(--fg);
+  border-color: var(--border);
+}
+:root.theme-dark .djs-popup .djs-popup-header,
+:root.theme-dark .djs-popup .entry {
+  color: var(--fg);
+}
+:root.theme-dark .djs-popup .entry:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+:root.theme-dark .djs-popup-search input,
+:root.theme-dark .djs-popup input {
+  background: var(--bg);
+  color: var(--fg);
+  border-color: var(--border);
 }
 
 /* diagram-js drives panning and element dragging with pointer events. Those
