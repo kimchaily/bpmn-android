@@ -14,6 +14,9 @@
     <div id="app">
       <header id="toolbar">
         <div class="toolbar-group toolbar-start">
+          <button id="btn-mode" class="tool" aria-label="Toggle pan / edit mode" title="Pan mode">
+            <span class="tool-icon">🖐</span>
+          </button>
           <button id="btn-new" class="tool" aria-label="New diagram" title="New">
             <span class="tool-icon">＋</span>
           </button>
@@ -32,9 +35,6 @@
           <button id="btn-redo" class="tool" aria-label="Redo" title="Redo">
             <span class="tool-icon">↷</span>
           </button>
-          <button id="btn-fit" class="tool" aria-label="Fit to screen" title="Fit">
-            <span class="tool-icon">⤢</span>
-          </button>
         </div>
 
         <div class="toolbar-group toolbar-end">
@@ -43,6 +43,9 @@
           </button>
           <button id="btn-export" class="tool" aria-label="Export as SVG" title="Export SVG">
             <span class="tool-icon">🖼</span>
+          </button>
+          <button id="btn-theme" class="tool" aria-label="Switch theme" title="Theme: system">
+            <span class="tool-icon">🖥</span>
           </button>
         </div>
       </header>
@@ -53,6 +56,7 @@
         <div id="zoom-controls">
           <button id="btn-zoom-in" class="zoom-btn" aria-label="Zoom in" title="Zoom in">＋</button>
           <button id="btn-zoom-out" class="zoom-btn" aria-label="Zoom out" title="Zoom out">−</button>
+          <button id="btn-fit" class="zoom-btn" aria-label="Fit to screen" title="Fit">⤢</button>
         </div>
       </main>
 

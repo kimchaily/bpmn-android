@@ -4,17 +4,30 @@
 // stationary tap, a compatibility `click`. So taps (selection, palette,
 // context pad) already work, but drags and panning never start.
 //
-// This bridges the gap: on a single-finger touch it watches for real movement
-// and, only then, synthesizes the mousedown → mousemove → mouseup sequence
-// diagram-js expects. A touch that never moves is left untouched so the native
-// `click` still drives selection. Two-finger gestures are ignored here and
+// This bridges the gap. There are two modes:
+//
+//  - Pan mode (default): a one-finger drag scrolls the canvas viewport directly
+//    (canvas.scroll), which can never grab or move an element — so panning
+//    around a busy diagram is safe. Taps still fall through to the native
+//    click, so selecting elements and using the palette/context pad keep
+//    working.
+//
+//  - Edit mode: a one-finger drag synthesizes the mousedown → mousemove →
+//    mouseup sequence diagram-js expects, so dragging an element moves it and
+//    dragging empty canvas pans.
+//
+// In both modes a touch that never crosses the movement threshold is left
+// untouched, so it registers as a tap. Two-finger gestures are ignored here and
 // handled by the pinch-zoom logic instead.
-export function enableTouchDragging(el) {
-  const THRESHOLD = 6; // px of movement before we treat it as a drag
+export function enableTouchDragging(el, { canvas, isPanMode }) {
+  const THRESHOLD = 6; // px of movement before a touch counts as a drag
   let active = false; // a single-finger touch is in progress
-  let dragging = false; // we have synthesized a mousedown and are dragging
+  let dragging = false; // movement threshold crossed; we are panning/dragging
+  let panning = false; // this drag is a pan-mode canvas scroll
   let startX = 0;
   let startY = 0;
+  let lastX = 0;
+  let lastY = 0;
   let startTarget = null;
 
   function mouseEvent(type, x, y, down) {
@@ -35,10 +48,10 @@ export function enableTouchDragging(el) {
     return document.elementFromPoint(x, y) || startTarget || el;
   }
 
-  function endDrag(x, y) {
-    if (!dragging) return;
-    targetAt(x, y).dispatchEvent(mouseEvent("mouseup", x, y, false));
-    dragging = false;
+  function endMouseDrag(x, y) {
+    if (dragging && !panning) {
+      targetAt(x, y).dispatchEvent(mouseEvent("mouseup", x, y, false));
+    }
   }
 
   el.addEventListener(
@@ -46,15 +59,18 @@ export function enableTouchDragging(el) {
     (e) => {
       if (e.touches.length !== 1) {
         // A second finger arrived (pinch): abandon any in-progress drag.
-        endDrag(startX, startY);
+        endMouseDrag(lastX, lastY);
         active = false;
+        dragging = false;
+        panning = false;
         return;
       }
       const t = e.touches[0];
       active = true;
       dragging = false;
-      startX = t.clientX;
-      startY = t.clientY;
+      panning = false;
+      startX = lastX = t.clientX;
+      startY = lastY = t.clientY;
       startTarget = e.target;
     },
     { passive: false }
@@ -69,17 +85,28 @@ export function enableTouchDragging(el) {
       if (!dragging) {
         const moved = Math.hypot(t.clientX - startX, t.clientY - startY);
         if (moved < THRESHOLD) return;
-        // Begin the drag from the original touch point so diagram-js computes
-        // the correct start position and delta.
         dragging = true;
-        startTarget.dispatchEvent(mouseEvent("mousedown", startX, startY, true));
+        panning = isPanMode();
+        if (!panning) {
+          // Begin the drag from the original touch point so diagram-js computes
+          // the correct start position and delta.
+          startTarget.dispatchEvent(
+            mouseEvent("mousedown", startX, startY, true)
+          );
+        }
       }
 
-      // Stop the browser from scrolling/refreshing now that we own the gesture.
       e.preventDefault();
-      targetAt(t.clientX, t.clientY).dispatchEvent(
-        mouseEvent("mousemove", t.clientX, t.clientY, true)
-      );
+      if (panning) {
+        // Move the viewport so the diagram follows the finger.
+        canvas.scroll({ dx: t.clientX - lastX, dy: t.clientY - lastY });
+      } else {
+        targetAt(t.clientX, t.clientY).dispatchEvent(
+          mouseEvent("mousemove", t.clientX, t.clientY, true)
+        );
+      }
+      lastX = t.clientX;
+      lastY = t.clientY;
     },
     { passive: false }
   );
@@ -87,15 +114,17 @@ export function enableTouchDragging(el) {
   function onEnd(e) {
     if (!active) return;
     const t = e.changedTouches && e.changedTouches[0];
-    const x = t ? t.clientX : startX;
-    const y = t ? t.clientY : startY;
+    const x = t ? t.clientX : lastX;
+    const y = t ? t.clientY : lastY;
     if (dragging) {
       // Suppress the trailing compatibility click so ending a drag does not
       // also register as a tap.
       e.preventDefault();
-      endDrag(x, y);
+      endMouseDrag(x, y);
     }
     active = false;
+    dragging = false;
+    panning = false;
   }
 
   el.addEventListener("touchend", onEnd, { passive: false });

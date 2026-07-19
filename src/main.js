@@ -15,9 +15,11 @@ import { createModeler } from "./modeler.js";
 import { EMPTY_DIAGRAM } from "./diagram.js";
 import { openFile, saveFile } from "./files.js";
 import { enableTouchDragging } from "./touch.js";
+import { initTheme } from "./theme.js";
 
 const STORAGE_KEY = "bpmn-mobile:last-diagram";
 const NAME_KEY = "bpmn-mobile:last-name";
+const MODE_KEY = "bpmn-mobile:pan-mode";
 
 const canvasEl = document.getElementById("canvas");
 const propertiesEl = document.getElementById("properties");
@@ -162,9 +164,36 @@ function setupPinchZoom(el) {
 }
 
 setupPinchZoom(canvasEl);
-// Translate single-finger touch drags into the mouse events diagram-js needs
-// for panning and moving elements (see touch.js).
-enableTouchDragging(canvasEl);
+
+// Pan vs. edit mode. Pan mode (default) makes one-finger drags scroll the
+// canvas so elements are never moved by accident; edit mode lets drags move
+// elements. Persisted across launches.
+let panMode = localStorage.getItem(MODE_KEY) !== "edit";
+const modeBtn = document.getElementById("btn-mode");
+function refreshMode() {
+  modeBtn.classList.toggle("active", panMode);
+  const icon = modeBtn.querySelector(".tool-icon");
+  if (icon) icon.textContent = panMode ? "🖐" : "✥";
+  modeBtn.title = panMode ? "Pan mode (drag pans; tap selects)" : "Edit mode (drag moves elements)";
+  modeBtn.setAttribute("aria-label", modeBtn.title);
+}
+refreshMode();
+on("btn-mode", () => {
+  panMode = !panMode;
+  localStorage.setItem(MODE_KEY, panMode ? "pan" : "edit");
+  refreshMode();
+  toast(panMode ? "Pan mode" : "Edit mode");
+});
+
+// Translate single-finger touch drags into either a canvas pan (pan mode) or
+// the mouse events diagram-js needs to move elements (edit mode); see touch.js.
+enableTouchDragging(canvasEl, {
+  canvas: modeler.get("canvas"),
+  isPanMode: () => panMode,
+});
+
+// Theme toggle (system / light / dark).
+initTheme(document.getElementById("btn-theme"));
 
 on("btn-properties", () => {
   const shown = propertiesEl.classList.toggle("open");

@@ -8,10 +8,15 @@
   --accent-fg: #ffffff;
   --toast-bg: rgba(28, 30, 34, 0.92);
   --toast-fg: #ffffff;
+  /* The diagram surface stays a light "paper" in every theme so BPMN shapes,
+     labels, and flows keep full contrast and user-picked colors stay true. */
+  --canvas-bg: #ffffff;
 }
 
+/* Dark values, shared by the OS preference ("system" theme, i.e. no explicit
+   data-theme) and by the forced "dark" theme. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme]) {
     --bg: #1e1f22;
     --fg: #e6e6e6;
     --toolbar-bg: #26282c;
@@ -19,6 +24,15 @@
     --toast-bg: rgba(240, 240, 240, 0.95);
     --toast-fg: #1c1e21;
   }
+}
+
+:root[data-theme="dark"] {
+  --bg: #1e1f22;
+  --fg: #e6e6e6;
+  --toolbar-bg: #26282c;
+  --border: #3a3d42;
+  --toast-bg: rgba(240, 240, 240, 0.95);
+  --toast-fg: #1c1e21;
 }
 
 * {
@@ -58,12 +72,21 @@ body {
   background: var(--toolbar-bg);
   border-bottom: 1px solid var(--border);
   user-select: none;
+  /* On very narrow phones the button row can exceed the width; let it scroll
+     instead of clipping or shrinking the buttons. */
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+#toolbar::-webkit-scrollbar {
+  display: none;
 }
 
 .toolbar-group {
   display: flex;
   align-items: center;
   gap: 2px;
+  flex: 0 0 auto;
 }
 
 .tool {
@@ -109,7 +132,7 @@ body {
   flex: 1 1 auto;
   min-width: 0;
   height: 100%;
-  background: var(--bg);
+  background: var(--canvas-bg);
 }
 
 /* diagram-js drives panning and element dragging with pointer events. Those

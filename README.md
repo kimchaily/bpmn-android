@@ -14,6 +14,10 @@ create/append-anything, token simulation, minimap, and grid.
 - **View** `.bpmn` files with pinch-to-zoom, drag-to-pan, and a fit button.
 - **Edit** diagrams with the full bpmn-js modeler palette and context pad.
 - **Simulate** process flow with the token-simulation module.
+- **Pan / Edit modes** (🖐 toggle): in pan mode a one-finger drag always moves
+  the view, so you never nudge an element by accident while navigating; switch
+  to edit mode to drag elements around. Tapping selects in either mode.
+- **Light / dark / system theme** (🖥 toggle), remembered between launches.
 - **Properties panel** to edit element properties (⚙︎ toggle).
 - **Open** `.bpmn`/`.xml` files via the native document picker.
 - **Save / share** the diagram back out (`.bpmn`) via the Android share sheet.
@@ -21,8 +25,8 @@ create/append-anything, token simulation, minimap, and grid.
 - **Autosave**: the working diagram is restored on next launch.
 
 Touch: tap to select / open the context pad / use the palette, one-finger drag
-to pan, two-finger pinch to zoom, and the floating **＋ / −** / **⤢ Fit**
-buttons for precise control.
+to pan (or move elements in edit mode), two-finger pinch to zoom, and the
+floating **＋ / −** / **⤢ Fit** buttons for precise control.
 
 ## Architecture
 
