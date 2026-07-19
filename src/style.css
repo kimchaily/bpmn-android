@@ -110,6 +110,16 @@ body {
   min-width: 0;
   height: 100%;
   background: var(--bg);
+}
+
+/* diagram-js drives panning and element dragging with pointer events. Those
+   only survive on a touchscreen if the element the finger lands on (the SVG,
+   not just the container) declares `touch-action: none`; otherwise the browser
+   claims the gesture for scrolling and cancels the drag. touch-action is not
+   inherited, so it must be set on the diagram surface itself. */
+#canvas,
+#canvas .djs-container,
+#canvas svg {
   touch-action: none;
 }
 

@@ -14,6 +14,7 @@ import "./style.css";
 import { createModeler } from "./modeler.js";
 import { EMPTY_DIAGRAM } from "./diagram.js";
 import { openFile, saveFile } from "./files.js";
+import { enableTouchDragging } from "./touch.js";
 
 const STORAGE_KEY = "bpmn-mobile:last-diagram";
 const NAME_KEY = "bpmn-mobile:last-name";
@@ -161,6 +162,9 @@ function setupPinchZoom(el) {
 }
 
 setupPinchZoom(canvasEl);
+// Translate single-finger touch drags into the mouse events diagram-js needs
+// for panning and moving elements (see touch.js).
+enableTouchDragging(canvasEl);
 
 on("btn-properties", () => {
   const shown = propertiesEl.classList.toggle("open");
