@@ -42,6 +42,11 @@ jobs:
           npx cap add android
           npx cap sync android
 
+      # Apply the app icon from assets/. Installed on the fly with npx so the
+      # sharp dependency never enters `npm ci`; best-effort for debug builds.
+      - name: Generate app icon
+        run: npx @capacitor/assets@3 generate --android || echo "icon generation skipped"
+
       - name: Build debug APK
         run: cd android && ./gradlew assembleDebug --no-daemon
 

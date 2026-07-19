@@ -8,4 +8,7 @@ android/
 # Build outputs
 *.apk
 *.aab
+
+# Signing keys — never commit these
 *.keystore
+*.jks

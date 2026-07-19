@@ -33,11 +33,15 @@ floating **＋ / −** / **⤢ Fit** buttons for precise control.
 ```
 .
 ├── .github/workflows/
-│   └── build-android.yml   # CI: builds the debug APK and uploads it as an artifact
+│   ├── build-android.yml   # CI: builds the debug APK, uploads it as an artifact
+│   └── release.yml         # CI: builds a signed release APK, publishes a Release
+├── assets/                 # App icon + splash source images (@capacitor/assets)
 ├── index.html              # App shell + toolbar
 ├── src/
-│   ├── main.js             # Boot, toolbar wiring, pinch-zoom, autosave
+│   ├── main.js             # Boot, toolbar wiring, pinch-zoom, theme, mode, autosave
 │   ├── modeler.js          # bpmn-js Modeler + feature modules
+│   ├── touch.js            # Touch → pan / move bridge
+│   ├── theme.js            # Light / dark / system theme
 │   ├── files.js            # Native / web file open + save + share
 │   ├── diagram.js          # Default empty diagram
 │   └── style.css           # Mobile UI
@@ -58,10 +62,24 @@ commit the `android/` folder and drop it from `.gitignore`.
 
 `.github/workflows/build-android.yml` builds a debug APK on every push/PR to
 `main` (and on manual dispatch): it installs deps, builds the web bundle,
-regenerates the Android project, and runs `./gradlew assembleDebug` on a
-GitHub-hosted runner (Android SDK preinstalled). The APK is published as the
-**`bpmn-android-debug`** workflow artifact — download it from the run's summary
-page and install it on your phone.
+regenerates the Android project, applies the app icon, and runs
+`./gradlew assembleDebug` on a GitHub-hosted runner (Android SDK preinstalled).
+The APK is published as the **`bpmn-android-debug`** workflow artifact — download
+it from the run's summary page and install it on your phone.
+
+For a **signed release** APK published as a GitHub Release, see
+[RELEASING.md](RELEASING.md): add the signing secrets once, then push a `v*`
+tag and `.github/workflows/release.yml` does the rest.
+
+## App icon
+
+The launcher icon and splash are generated from the source images in `assets/`
+by [`@capacitor/assets`](https://github.com/ionic-team/capacitor-assets) during
+CI. To regenerate locally after `npx cap add android`:
+
+```bash
+npx @capacitor/assets@3 generate --android
+```
 
 ## Develop in the browser
 
